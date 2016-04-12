@@ -79,6 +79,12 @@ namespace{
 		Expression create_extractvalue_expression(ExtractValueInst * EI);
 		uint32_t lookup_or_add_call(CallInst * C);
 		public:
+			/*void dump(){
+				errs() <<" Dumping Value Table\n "	;
+				for (auto ii = valueNumbering.begin(), ie = valueNumbering.end(); ii != ie , ii++){
+					errs()<<ii->second<< "  " << ii->first << endl;
+				}
+			}*/
 			ValueTable(): nextValueNumber(1){}
 			uint32_t lookup_or_add(Value *V);
 			uint32_t lookup(Value*) const;
@@ -145,7 +151,7 @@ Expression ValueTable::create_expression(Instruction *I){
 		if(e.varargs[0] > e.varargs[1])
 			std::swap(e.varargs[0] ,e.varargs[1]);
 	}
-	if(CmpInst * C = dyn_cast<CmpInst>(I)){
+	/*if(CmpInst * C = dyn_cast<CmpInst>(I)){
 		CmpInst::Predicate Predicate = C->getPredicate();
 		if(e.varargs[0] > e.varargs[1]){
 			std::swap(e.varargs[0], e.varargs[1]);
@@ -155,7 +161,12 @@ Expression ValueTable::create_expression(Instruction *I){
 	}else if(InsertValueInst *E = dyn_cast<InsertValueInst>(I)){
 		for(InsertValueInst::idx_iterator II = E->idx_begin(), IE = E->idx_end(); II != IE; II++)
 			e.varargs.push_back(*II);		
+	}*/
+	errs() << " expression " << e.type << " " << e.opcode <<"\n";
+	for (int i =0;i < e.varargs.size();i++){
+		errs() << e.varargs[i] <<" ";
 	}
+	errs()<<"end expression\n";
 	return e;
 }
 
@@ -204,7 +215,6 @@ uint32_t ValueTable::lookup_or_add(Value *V ){
 	if(!e) e = nextValueNumber++;
 	valueNumbering[V]= e;
 	return e;
-	return 0;
 }
 //===--------------------------------------------------------===//
 //				My CSE Pass
@@ -225,17 +235,77 @@ class MyCSE : public FunctionPass {
 	};
 	DenseMap<uint32_t,LeaderTableEntry> LeaderTable;
 	BumpPtrAllocator TableAllocator;
+	
+	std::vector<Value *> leaderTable;	
 	public:
 		static char ID;
-		//MyCSE() : FunctionPass(ID) {}
+		MyCSE() : FunctionPass(ID) {}
 		bool runOnFunction(Function &F) override;
-		explicit MyCSE():FunctionPass(ID){}
 		void markInstructionForDeletion(Instruction *I){
 			VN.erase(I);
 			InstrsToErase.push_back(I);
 		}
 	private:
-	
+	void dump(){
+		for (int i=0 ;i < leaderTable.size() ;i++){
+			
+			errs() << i<<" ";
+			if((leaderTable[i]))
+				((Instruction *) leaderTable[i])->print(errs()) ; 	
+			errs() <<"\n";
+		}
+	}
+	void addToLeaderTable(uint32_t N, Value *V ){
+		while(leaderTable.size() < N-1){
+			leaderTable.push_back(nullptr);		
+		}	
+		leaderTable.push_back(V);
+	}
+	void removeFromLeaderTable(uint32_t N, Value *V){
+		leaderTable[N-1] = nullptr;
+	}
+	Value *  findLeader(uint32_t N){
+		if(leaderTable.size() < N-1){
+			return nullptr;
+		}	
+		return leaderTable[N-1];
+	}
+	/*void addToLeaderTable(uint32_t N, Value *V , const BasicBlock *BB){
+		LeaderTableEntry &Curr = LeaderTable[N];
+		if(!Curr.Val){
+			Curr.Val = V;
+			Curr.BB = BB;
+			return;
+		}
+		LeaderTableEntry *Node = TableAllocator.Allocate<LeaderTableEntry>();
+		Node->Val = V;
+		Node->BB = BB;
+		Node->Next = Curr.Next;
+		Curr.Next = Node;
+	}
+	void removeFromLeaderTable(uint32_t N, Instruction *I, BasicBlock *BB){
+		LeaderTableEntry * Prev = nullptr;
+		LeaderTableEntry * Curr = &LeaderTable[N];
+		while(Curr && (Curr->Val != I || Curr->BB != BB)){
+			Prev = Curr;
+			Curr = Curr->Next;
+		}
+		if(!Curr)
+			return;
+		if(Prev){
+			Prev->Next = Curr->Next;
+		}else{
+			if(!Curr->Next){
+				Curr->Val = nullptr;
+				Curr->BB = nullptr;
+			}else{
+				LeaderTableEntry * Next = Curr->Next;
+				Curr->Val = Next->Val;
+				Curr->BB = Next->BB;
+				Curr->Next = Next->Next;
+			}
+		}
+	}*/	
 	bool iterateOnFunction(Function &F);
 	bool processBlock(BasicBlock* BB);
 	bool processInstruction(Instruction *I);
@@ -249,18 +319,23 @@ static void patchAndReplaceAllUsesWith(Instruction *I, Value *Repl){
 	I->replaceAllUsesWith(Repl);
 }
 bool MyCSE::processLoad(LoadInst * L){
+	errs() << "Process Load \n";
 	if(!L->isSimple())
 		return false;
 	if(L->use_empty()){
 		markInstructionForDeletion(L);
+		return true;
 	}
+	//L->printAsOperand(errs());
+	
+	
+	errs() << "Returning Load \n";
 	return false;
 }
 bool MyCSE::runOnFunction(Function &F){
 	if(skipOptnoneFunction(F))
 		return false;
 	
-	unsigned Iteration =0 ;
 	bool hasChange = true;
 	bool changed  = false;
 	bool onceChanged = false;
@@ -274,12 +349,9 @@ bool MyCSE::runOnFunction(Function &F){
 		}
 		onceChanged |= hasChange;
 	}
-	return changed;
+	return onceChanged;
 
 };
-/*FunctionPass *llvm::createMyCSEPass(bool NoLoads){
-	return new MyCSE(NoLoads);
-}*/
 void MyCSE::cleanupGlobalSets(){
 	VN.clear();
 	LeaderTable.clear();
@@ -287,57 +359,49 @@ void MyCSE::cleanupGlobalSets(){
 }
 bool MyCSE::processInstruction(Instruction *I){
 	//I->print(errs()); 
-	if(isa<DbgInfoIntrinsic>(I))
-		return false;
 	if(LoadInst *LI = dyn_cast<LoadInst>(I)){
 		if(processLoad(LI))
 			return true;
 		unsigned Num = VN.lookup_or_add(LI);
+		addToLeaderTable(Num,LI);
 		return false;
 	}
-	/*if(BranchInst* BI = dyn_cast<BranchInst>(I)){
-		if(!BI->isConditional())
-			return false;
-		if(isa<Constant>(BI->getCondition()))
-			return processFoldableCondBr(BI);
-		return false;
-	}*/
+
 	if(I->getType()->isVoidTy()) return false;
 	uint32_t NextNum = VN.getNextUnusedValueNumber();
 	unsigned Num = VN.lookup_or_add(I);
 	if(isa<AllocaInst>(I) || isa<TerminatorInst>(I) || isa<PHINode>(I)){
+		addToLeaderTable(Num,I);
 		return false;
 	}
 	if(Num >= NextNum){
+		addToLeaderTable(Num,I);
 		return false;
 	}
-	Value * repl ;//= findLeader(I->getParent() , Num);
+	Value * repl= findLeader(Num);
 	if(!repl){
-		//addToLeaderTable(Num,I,I->getParent());
+		addToLeaderTable(Num,I);
 		return false;
 	}
 	patchAndReplaceAllUsesWith(I,repl);
-	if(MD && repl->getType()->getScalarType()->isPointerTy())
-		MD->invalidateCachedPointerInfo(repl);
 	markInstructionForDeletion(I);
 	return true;
 }
 bool MyCSE::processBlock(BasicBlock *BB){
-	bool changed = false;
+	cleanupGlobalSets();
+	bool changed = false;	
 	for(BasicBlock::iterator II = BB->begin() , IE = BB->end(); II!=IE;){
 		changed |= processInstruction(II);
 		if(InstrsToErase.empty()){
 			II++;
 			continue;
 		}
-		//NumGVNInstr += InstrsToErase.size();
+		errs() << "Hello World!\n" ;
 		bool AtStart = II ==BB->begin();
 		if(!AtStart)
 			--II;
 		for(SmallVectorImpl<Instruction *>::iterator I = InstrsToErase.begin(),E= InstrsToErase.end();
 			I!=E ; ++I){
-			DEBUG(dbgs()<<"GVN removed: "<<**I<<'\n');
-			if(MD) MD->removeInstruction(*I);
 			(*I)->eraseFromParent();	
 		}
 		InstrsToErase.clear();
@@ -346,5 +410,6 @@ bool MyCSE::processBlock(BasicBlock *BB){
 		else
 			++II;
 	}
+	dump();	
 	return changed;
 }
