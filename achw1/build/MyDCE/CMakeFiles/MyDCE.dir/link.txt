@@ -1,0 +1,1 @@
+/usr/bin/c++  -fPIC -fno-rtti  -shared -Wl,-soname,libMyDCE.so -o libMyDCE.so CMakeFiles/MyDCE.dir/MyDCE.cpp.o 

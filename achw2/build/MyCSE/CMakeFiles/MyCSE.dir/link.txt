@@ -1,0 +1,1 @@
+/usr/bin/c++  -fPIC -fno-rtti  -shared -Wl,-soname,libMyCSE.so -o libMyCSE.so CMakeFiles/MyCSE.dir/MyCSE.cpp.o 
