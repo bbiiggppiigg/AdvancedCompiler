@@ -218,15 +218,18 @@ class MyCSE : public FunctionPass {
 	SetVector<BasicBlock * > DeadBlocks;
 	ValueTable VN;
 	SmallVector<Instruction*,8>InstrsToErase;
-
+	struct LeaderTableEntry{
+		Value *Val;
+		const BasicBlock *BB;
+		LeaderTableEntry *Next;
+	};
+	DenseMap<uint32_t,LeaderTableEntry> LeaderTable;
+	BumpPtrAllocator TableAllocator;
 	public:
 		static char ID;
 		//MyCSE() : FunctionPass(ID) {}
 		bool runOnFunction(Function &F) override;
-		explicit MyCSE(bool noloads=false):FunctionPass(ID),NoLoads(noloads),MD(nullptr){
-			//initializeMyCSEPass(*PassRegistry::getPassRegistry());
-		
-		}
+		explicit MyCSE():FunctionPass(ID){}
 		void markInstructionForDeletion(Instruction *I){
 			VN.erase(I);
 			InstrsToErase.push_back(I);
@@ -242,9 +245,8 @@ class MyCSE : public FunctionPass {
 char MyCSE::ID =0;
 static RegisterPass<MyCSE> X("myMagicCSE" , "My CSE Pass" , false , false );
 
-
 static void patchAndReplaceAllUsesWith(Instruction *I, Value *Repl){
-
+	I->replaceAllUsesWith(Repl);
 }
 bool MyCSE::processLoad(LoadInst * L){
 	if(!L->isSimple())
@@ -257,16 +259,7 @@ bool MyCSE::processLoad(LoadInst * L){
 bool MyCSE::runOnFunction(Function &F){
 	if(skipOptnoneFunction(F))
 		return false;
-	/*if (!NoLoads)
-	    MD = &getAnalysis<MemoryDependenceAnalysis>();
-	*/
-	/*DT = &getAnalysis<DominatorTreeWrapperPass>().getDomTree();
-	AC = &getAnalysis<AssumptionCacheTracker>().getAssumptionCache(F);
-	TLI = &getAnalysis<TargetLibraryInfoWrapperPass>().getTLI();
-	VN.setAliasAnalysis(&getAnalysis<AliasAnalysis>());
-	VN.setMemDep(MD);
-	VN.setDomTree(DT);
-	*/
+	
 	unsigned Iteration =0 ;
 	bool hasChange = true;
 	bool changed  = false;
@@ -284,13 +277,16 @@ bool MyCSE::runOnFunction(Function &F){
 	return changed;
 
 };
-FunctionPass *llvm::createMyCSEPass(bool NoLoads){
+/*FunctionPass *llvm::createMyCSEPass(bool NoLoads){
 	return new MyCSE(NoLoads);
-}
+}*/
 void MyCSE::cleanupGlobalSets(){
 	VN.clear();
+	LeaderTable.clear();
+	TableAllocator.Reset();
 }
 bool MyCSE::processInstruction(Instruction *I){
+	//I->print(errs()); 
 	if(isa<DbgInfoIntrinsic>(I))
 		return false;
 	if(LoadInst *LI = dyn_cast<LoadInst>(I)){
