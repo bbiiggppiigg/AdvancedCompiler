@@ -42,10 +42,10 @@ RM = /usr/bin/cmake -E remove -f
 EQUALS = =
 
 # The top-level source directory on which CMake was run.
-CMAKE_SOURCE_DIR = /home/bbiiggppiigg/achw2
+CMAKE_SOURCE_DIR = /home/bbiiggppiigg/AdvancedCompiler/achw2
 
 # The top-level build directory on which CMake was run.
-CMAKE_BINARY_DIR = /home/bbiiggppiigg/achw2/build
+CMAKE_BINARY_DIR = /home/bbiiggppiigg/AdvancedCompiler/achw2/build
 
 #=============================================================================
 # Targets provided globally by CMake.
@@ -72,14 +72,14 @@ rebuild_cache/fast: rebuild_cache
 
 # The main all target
 all: cmake_check_build_system
-	cd /home/bbiiggppiigg/achw2/build && $(CMAKE_COMMAND) -E cmake_progress_start /home/bbiiggppiigg/achw2/build/CMakeFiles /home/bbiiggppiigg/achw2/build/MyCSE/CMakeFiles/progress.marks
-	cd /home/bbiiggppiigg/achw2/build && $(MAKE) -f CMakeFiles/Makefile2 MyCSE/all
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/bbiiggppiigg/achw2/build/CMakeFiles 0
+	cd /home/bbiiggppiigg/AdvancedCompiler/achw2/build && $(CMAKE_COMMAND) -E cmake_progress_start /home/bbiiggppiigg/AdvancedCompiler/achw2/build/CMakeFiles /home/bbiiggppiigg/AdvancedCompiler/achw2/build/MyCSE/CMakeFiles/progress.marks
+	cd /home/bbiiggppiigg/AdvancedCompiler/achw2/build && $(MAKE) -f CMakeFiles/Makefile2 MyCSE/all
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/bbiiggppiigg/AdvancedCompiler/achw2/build/CMakeFiles 0
 .PHONY : all
 
 # The main clean target
 clean:
-	cd /home/bbiiggppiigg/achw2/build && $(MAKE) -f CMakeFiles/Makefile2 MyCSE/clean
+	cd /home/bbiiggppiigg/AdvancedCompiler/achw2/build && $(MAKE) -f CMakeFiles/Makefile2 MyCSE/clean
 .PHONY : clean
 
 # The main clean target
@@ -88,22 +88,22 @@ clean/fast: clean
 
 # Prepare targets for installation.
 preinstall: all
-	cd /home/bbiiggppiigg/achw2/build && $(MAKE) -f CMakeFiles/Makefile2 MyCSE/preinstall
+	cd /home/bbiiggppiigg/AdvancedCompiler/achw2/build && $(MAKE) -f CMakeFiles/Makefile2 MyCSE/preinstall
 .PHONY : preinstall
 
 # Prepare targets for installation.
 preinstall/fast:
-	cd /home/bbiiggppiigg/achw2/build && $(MAKE) -f CMakeFiles/Makefile2 MyCSE/preinstall
+	cd /home/bbiiggppiigg/AdvancedCompiler/achw2/build && $(MAKE) -f CMakeFiles/Makefile2 MyCSE/preinstall
 .PHONY : preinstall/fast
 
 # clear depends
 depend:
-	cd /home/bbiiggppiigg/achw2/build && $(CMAKE_COMMAND) -H$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR) --check-build-system CMakeFiles/Makefile.cmake 1
+	cd /home/bbiiggppiigg/AdvancedCompiler/achw2/build && $(CMAKE_COMMAND) -H$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR) --check-build-system CMakeFiles/Makefile.cmake 1
 .PHONY : depend
 
 # Convenience name for target.
 MyCSE/CMakeFiles/MyCSE.dir/rule:
-	cd /home/bbiiggppiigg/achw2/build && $(MAKE) -f CMakeFiles/Makefile2 MyCSE/CMakeFiles/MyCSE.dir/rule
+	cd /home/bbiiggppiigg/AdvancedCompiler/achw2/build && $(MAKE) -f CMakeFiles/Makefile2 MyCSE/CMakeFiles/MyCSE.dir/rule
 .PHONY : MyCSE/CMakeFiles/MyCSE.dir/rule
 
 # Convenience name for target.
@@ -112,7 +112,7 @@ MyCSE: MyCSE/CMakeFiles/MyCSE.dir/rule
 
 # fast build rule for target.
 MyCSE/fast:
-	cd /home/bbiiggppiigg/achw2/build && $(MAKE) -f MyCSE/CMakeFiles/MyCSE.dir/build.make MyCSE/CMakeFiles/MyCSE.dir/build
+	cd /home/bbiiggppiigg/AdvancedCompiler/achw2/build && $(MAKE) -f MyCSE/CMakeFiles/MyCSE.dir/build.make MyCSE/CMakeFiles/MyCSE.dir/build
 .PHONY : MyCSE/fast
 
 MyCSE.o: MyCSE.cpp.o
@@ -120,7 +120,7 @@ MyCSE.o: MyCSE.cpp.o
 
 # target to build an object file
 MyCSE.cpp.o:
-	cd /home/bbiiggppiigg/achw2/build && $(MAKE) -f MyCSE/CMakeFiles/MyCSE.dir/build.make MyCSE/CMakeFiles/MyCSE.dir/MyCSE.cpp.o
+	cd /home/bbiiggppiigg/AdvancedCompiler/achw2/build && $(MAKE) -f MyCSE/CMakeFiles/MyCSE.dir/build.make MyCSE/CMakeFiles/MyCSE.dir/MyCSE.cpp.o
 .PHONY : MyCSE.cpp.o
 
 MyCSE.i: MyCSE.cpp.i
@@ -128,7 +128,7 @@ MyCSE.i: MyCSE.cpp.i
 
 # target to preprocess a source file
 MyCSE.cpp.i:
-	cd /home/bbiiggppiigg/achw2/build && $(MAKE) -f MyCSE/CMakeFiles/MyCSE.dir/build.make MyCSE/CMakeFiles/MyCSE.dir/MyCSE.cpp.i
+	cd /home/bbiiggppiigg/AdvancedCompiler/achw2/build && $(MAKE) -f MyCSE/CMakeFiles/MyCSE.dir/build.make MyCSE/CMakeFiles/MyCSE.dir/MyCSE.cpp.i
 .PHONY : MyCSE.cpp.i
 
 MyCSE.s: MyCSE.cpp.s
@@ -136,7 +136,7 @@ MyCSE.s: MyCSE.cpp.s
 
 # target to generate assembly for a file
 MyCSE.cpp.s:
-	cd /home/bbiiggppiigg/achw2/build && $(MAKE) -f MyCSE/CMakeFiles/MyCSE.dir/build.make MyCSE/CMakeFiles/MyCSE.dir/MyCSE.cpp.s
+	cd /home/bbiiggppiigg/AdvancedCompiler/achw2/build && $(MAKE) -f MyCSE/CMakeFiles/MyCSE.dir/build.make MyCSE/CMakeFiles/MyCSE.dir/MyCSE.cpp.s
 .PHONY : MyCSE.cpp.s
 
 # Help Target
@@ -162,6 +162,6 @@ help:
 # No rule that depends on this can have commands that come from listfiles
 # because they might be regenerated.
 cmake_check_build_system:
-	cd /home/bbiiggppiigg/achw2/build && $(CMAKE_COMMAND) -H$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR) --check-build-system CMakeFiles/Makefile.cmake 0
+	cd /home/bbiiggppiigg/AdvancedCompiler/achw2/build && $(CMAKE_COMMAND) -H$(CMAKE_SOURCE_DIR) -B$(CMAKE_BINARY_DIR) --check-build-system CMakeFiles/Makefile.cmake 0
 .PHONY : cmake_check_build_system
 

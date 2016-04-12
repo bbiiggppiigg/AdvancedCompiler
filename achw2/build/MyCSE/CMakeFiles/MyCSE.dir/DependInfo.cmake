@@ -4,7 +4,7 @@ set(CMAKE_DEPENDS_LANGUAGES
   )
 # The set of files for implicit dependencies of each language:
 set(CMAKE_DEPENDS_CHECK_CXX
-  "/home/bbiiggppiigg/achw2/MyCSE/MyCSE.cpp" "/home/bbiiggppiigg/achw2/build/MyCSE/CMakeFiles/MyCSE.dir/MyCSE.cpp.o"
+  "/home/bbiiggppiigg/AdvancedCompiler/achw2/MyCSE/MyCSE.cpp" "/home/bbiiggppiigg/AdvancedCompiler/achw2/build/MyCSE/CMakeFiles/MyCSE.dir/MyCSE.cpp.o"
   )
 set(CMAKE_CXX_COMPILER_ID "GNU")
 

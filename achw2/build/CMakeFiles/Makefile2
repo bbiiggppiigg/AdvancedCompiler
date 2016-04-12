@@ -47,10 +47,10 @@ RM = /usr/bin/cmake -E remove -f
 EQUALS = =
 
 # The top-level source directory on which CMake was run.
-CMAKE_SOURCE_DIR = /home/bbiiggppiigg/achw2
+CMAKE_SOURCE_DIR = /home/bbiiggppiigg/AdvancedCompiler/achw2
 
 # The top-level build directory on which CMake was run.
-CMAKE_BINARY_DIR = /home/bbiiggppiigg/achw2/build
+CMAKE_BINARY_DIR = /home/bbiiggppiigg/AdvancedCompiler/achw2/build
 
 #=============================================================================
 # Directory level rules for directory MyCSE
@@ -74,7 +74,7 @@ MyCSE/preinstall:
 MyCSE/CMakeFiles/MyCSE.dir/all:
 	$(MAKE) -f MyCSE/CMakeFiles/MyCSE.dir/build.make MyCSE/CMakeFiles/MyCSE.dir/depend
 	$(MAKE) -f MyCSE/CMakeFiles/MyCSE.dir/build.make MyCSE/CMakeFiles/MyCSE.dir/build
-	$(CMAKE_COMMAND) -E cmake_progress_report /home/bbiiggppiigg/achw2/build/CMakeFiles  1
+	$(CMAKE_COMMAND) -E cmake_progress_report /home/bbiiggppiigg/AdvancedCompiler/achw2/build/CMakeFiles  1
 	@echo "Built target MyCSE"
 .PHONY : MyCSE/CMakeFiles/MyCSE.dir/all
 
@@ -84,9 +84,9 @@ all: MyCSE/CMakeFiles/MyCSE.dir/all
 
 # Build rule for subdir invocation for target.
 MyCSE/CMakeFiles/MyCSE.dir/rule: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/bbiiggppiigg/achw2/build/CMakeFiles 1
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/bbiiggppiigg/AdvancedCompiler/achw2/build/CMakeFiles 1
 	$(MAKE) -f CMakeFiles/Makefile2 MyCSE/CMakeFiles/MyCSE.dir/all
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/bbiiggppiigg/achw2/build/CMakeFiles 0
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/bbiiggppiigg/AdvancedCompiler/achw2/build/CMakeFiles 0
 .PHONY : MyCSE/CMakeFiles/MyCSE.dir/rule
 
 # Convenience name for target.

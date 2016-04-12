@@ -1,4 +1,4 @@
-# Install script for directory: /home/bbiiggppiigg/achw2/MyCSE
+# Install script for directory: /home/bbiiggppiigg/AdvancedCompiler/achw2/MyCSE
 
 # Set the install prefix
 if(NOT DEFINED CMAKE_INSTALL_PREFIX)

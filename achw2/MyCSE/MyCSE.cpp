@@ -37,13 +37,6 @@
 #define DEBUG_TYPE "mycse"
 using namespace llvm;
 using namespace PatternMatch;
-STATISTIC(NumGVNInstr,  "Number of instructions deleted");
-STATISTIC(NumGVNLoad,   "Number of loads deleted");
-STATISTIC(NumGVNPRE,    "Number of instructions PRE'd");
-STATISTIC(NumGVNBlocks, "Number of blocks merged");
-STATISTIC(NumGVNSimpl,  "Number of instructions simplified");
-STATISTIC(NumGVNEqProp, "Number of equalities propagated");
-STATISTIC(NumPRELoad,   "Number of loads PRE'd");
 
 //===------------------------------------------------------------===//
 //					  Expression Class
@@ -75,9 +68,9 @@ namespace{
 	class ValueTable{
 		DenseMap<Value *,uint32_t> valueNumbering;
 		DenseMap<Expression,uint32_t> expressionNumbering;
-		AliasAnalysis * AA;
-		MemoryDependenceAnalysis *MD;
-		DominatorTree *DT;
+		//AliasAnalysis * AA;
+		//MemoryDependenceAnalysis *MD;
+		//DominatorTree *DT;
 		
 		uint32_t nextValueNumber;
 		Expression create_expression(Instruction * I);
@@ -95,10 +88,10 @@ namespace{
 			void add(Value * V,uint32_t num);
 			void clear();
 			void erase(Value *V);
-			void setAliasAnalysis( AliasAnalysis *A){ AA = A;}
-			AliasAnalysis *getAliasAnalysis() const {return AA;}
-			void setMemDep(MemoryDependenceAnalysis *M) {MD = M; }
-			void setDomTree(DominatorTree * D) {DT = D; }
+			//void setAliasAnalysis( AliasAnalysis *A){ AA = A;}
+			//AliasAnalysis *getAliasAnalysis() const {return AA;}
+			//void setMemDep(MemoryDependenceAnalysis *M) {MD = M; }
+			//void setDomTree(DominatorTree * D) {DT = D; }
 			uint32_t getNextUnusedValueNumber(){return nextValueNumber;}
 			void verifyRemoved(const Value *) const;
 	};
@@ -119,7 +112,7 @@ namespace llvm{
 			return LHS == RHS;
 		}
 	};
-	void initializeMyCSEPass(PassRegistry &P);
+	//void initializeMyCSEPass(PassRegistry &P);
 	FunctionPass * createMyCSEPass(bool NoLoads);
 }
 void ValueTable::clear(){
@@ -129,6 +122,89 @@ void ValueTable::clear(){
 }
 void ValueTable::erase(Value *V){
 	valueNumbering.erase(V);
+}
+Expression ValueTable::create_extractvalue_expression(ExtractValueInst * EI){
+	Expression e;
+	e.type = EI->getType();
+	e.opcode = EI->getOpcode();
+	for(Instruction::op_iterator OI= EI->op_begin(), OE = EI->op_end(); OI!=OE;++OI){
+		e.varargs.push_back(lookup_or_add(*OI));
+	}
+	for(ExtractValueInst::idx_iterator II= EI->idx_begin(), IE = EI->idx_end(); II != IE; ++II)
+		e.varargs.push_back(*II);
+	return e;
+}
+Expression ValueTable::create_expression(Instruction *I){
+	Expression e;
+	e.type = I->getType();
+	e.opcode = I->getOpcode();
+	for(Instruction::op_iterator OI= I->op_begin(), OE = I->op_end(); OI!=OE;++OI){
+		e.varargs.push_back(lookup_or_add(*OI));
+	}
+	if(I->isCommutative()){
+		if(e.varargs[0] > e.varargs[1])
+			std::swap(e.varargs[0] ,e.varargs[1]);
+	}
+	if(CmpInst * C = dyn_cast<CmpInst>(I)){
+		CmpInst::Predicate Predicate = C->getPredicate();
+		if(e.varargs[0] > e.varargs[1]){
+			std::swap(e.varargs[0], e.varargs[1]);
+			Predicate = CmpInst::getSwappedPredicate(Predicate);
+		}
+		e.opcode = (C->getOpcode() <<8) | Predicate;
+	}else if(InsertValueInst *E = dyn_cast<InsertValueInst>(I)){
+		for(InsertValueInst::idx_iterator II = E->idx_begin(), IE = E->idx_end(); II != IE; II++)
+			e.varargs.push_back(*II);		
+	}
+	return e;
+}
+
+
+uint32_t ValueTable::lookup_or_add(Value *V ){
+	DenseMap<Value*,uint32_t>::iterator VI = valueNumbering.find(V);
+	if(VI != valueNumbering.end())
+		return VI->second;
+	if(!isa<Instruction>(V)){
+		valueNumbering[V] = nextValueNumber;
+		return nextValueNumber++;
+	}
+	Instruction *I = cast<Instruction>(V);
+	Expression exp;
+	switch(I->getOpcode()){
+		case Instruction::Add:
+		case Instruction::FAdd:
+		case Instruction::Sub:
+		case Instruction::FSub:
+		case Instruction::Mul:
+		case Instruction::FMul:
+		case Instruction::UDiv:
+		case Instruction::SDiv:
+		case Instruction::FDiv:
+		case Instruction::URem:
+		case Instruction::SRem:
+		case Instruction::FRem:
+		case Instruction::Shl:
+		case Instruction::And:
+		case Instruction::Or:
+		case Instruction::Xor:
+		case Instruction::Select:
+		case Instruction::ExtractElement:
+		case Instruction::InsertValue:
+		case Instruction::GetElementPtr:
+			exp = create_expression(I);
+			break;
+		case Instruction::ExtractValue:
+			exp = create_extractvalue_expression(cast<ExtractValueInst>(I));
+			break;
+		default:
+			valueNumbering[V]=nextValueNumber;
+			return nextValueNumber++;
+	}
+	uint32_t&e = expressionNumbering[exp];
+	if(!e) e = nextValueNumber++;
+	valueNumbering[V]= e;
+	return e;
+	return 0;
 }
 //===--------------------------------------------------------===//
 //				My CSE Pass
@@ -142,52 +218,68 @@ class MyCSE : public FunctionPass {
 	SetVector<BasicBlock * > DeadBlocks;
 	ValueTable VN;
 	SmallVector<Instruction*,8>InstrsToErase;
+
 	public:
 		static char ID;
 		//MyCSE() : FunctionPass(ID) {}
 		bool runOnFunction(Function &F) override;
 		explicit MyCSE(bool noloads=false):FunctionPass(ID),NoLoads(noloads),MD(nullptr){
-			initializeMyCSEPass(*PassRegistry::getPassRegistry());
+			//initializeMyCSEPass(*PassRegistry::getPassRegistry());
 		
 		}
+		void markInstructionForDeletion(Instruction *I){
+			VN.erase(I);
+			InstrsToErase.push_back(I);
+		}
 	private:
+	
 	bool iterateOnFunction(Function &F);
 	bool processBlock(BasicBlock* BB);
 	bool processInstruction(Instruction *I);
 	void cleanupGlobalSets();
+	bool processLoad(LoadInst *L);
 };
 char MyCSE::ID =0;
 static RegisterPass<MyCSE> X("myMagicCSE" , "My CSE Pass" , false , false );
 
-INITIALIZE_PASS_BEGIN(MyCSE, "myMagicCSE", "My CSE Pass", false, false)
-INITIALIZE_PASS_DEPENDENCY(AssumptionCacheTracker)
-INITIALIZE_PASS_DEPENDENCY(MemoryDependenceAnalysis)
-INITIALIZE_PASS_DEPENDENCY(DominatorTreeWrapperPass)
-INITIALIZE_PASS_DEPENDENCY(TargetLibraryInfoWrapperPass)
-INITIALIZE_AG_DEPENDENCY(AliasAnalysis)
-INITIALIZE_PASS_END(MyCSE, "myMagicCSE", "My CSE Pass", false, false)
 
+static void patchAndReplaceAllUsesWith(Instruction *I, Value *Repl){
+
+}
+bool MyCSE::processLoad(LoadInst * L){
+	if(!L->isSimple())
+		return false;
+	if(L->use_empty()){
+		markInstructionForDeletion(L);
+	}
+	return false;
+}
 bool MyCSE::runOnFunction(Function &F){
 	if(skipOptnoneFunction(F))
 		return false;
-	if (!NoLoads)
+	/*if (!NoLoads)
 	    MD = &getAnalysis<MemoryDependenceAnalysis>();
-	
-	DT = &getAnalysis<DominatorTreeWrapperPass>().getDomTree();
+	*/
+	/*DT = &getAnalysis<DominatorTreeWrapperPass>().getDomTree();
 	AC = &getAnalysis<AssumptionCacheTracker>().getAssumptionCache(F);
 	TLI = &getAnalysis<TargetLibraryInfoWrapperPass>().getTLI();
 	VN.setAliasAnalysis(&getAnalysis<AliasAnalysis>());
 	VN.setMemDep(MD);
 	VN.setDomTree(DT);
-	
+	*/
 	unsigned Iteration =0 ;
 	bool hasChange = true;
 	bool changed  = false;
+	bool onceChanged = false;
 	while(hasChange){
-		DEBUG(dbgs() << "GVN iteration : "<<Iteration <<"\n");
-		hasChange = iterateOnFunction(F);
-		changed |= hasChange;
-		++Iteration;
+		hasChange= false;
+		for (Function::iterator BI = F.begin(), BE = F.end(); BI != BE ; BI++){
+			do{
+				changed = processBlock(BI);
+				hasChange |= changed;
+			}while(changed);	
+		}
+		onceChanged |= hasChange;
 	}
 	return changed;
 
@@ -198,65 +290,54 @@ FunctionPass *llvm::createMyCSEPass(bool NoLoads){
 void MyCSE::cleanupGlobalSets(){
 	VN.clear();
 }
-bool MyCSE::iterateOnFunction(Function &F){
-//	VN.clear();
-	bool changed = false;
-	std::vector<BasicBlock*> BBs;
-	ReversePostOrderTraversal<Function *> RPOT(&F);
-	for(ReversePostOrderTraversal<Function *>::rpo_iterator RI = RPOT.begin(), RE= RPOT.end(); RI!= RE ; ++RI)
-		BBs.push_back(*RI);
-	for(std::vector<BasicBlock*>::iterator I = BBs.begin(), E = BBs.end();I!=E ; I++)
-		changed = processBlock(*I);
-	return changed;
-}
 bool MyCSE::processInstruction(Instruction *I){
-	if(isa<DbgInfoIntrinsinc>(I))
+	if(isa<DbgInfoIntrinsic>(I))
 		return false;
-	const DataLayout &DL = I->getModule()->getDataLayout();
-	if(Value *V = SimplifyInstruction(I,DL,TLI,DT,AC)){
-		I->replaceAllUsesWith(V);
-		if(MD && V->getType()->getScalarType()->isPointerTy())
-			MD->invalidateCachedPointerInfo(V);
-		markInstructionForDeletion(I);
-		++NumGVNSimpl;
-		return true;
-	}
 	if(LoadInst *LI = dyn_cast<LoadInst>(I)){
 		if(processLoad(LI))
 			return true;
 		unsigned Num = VN.lookup_or_add(LI);
 		return false;
 	}
-	if(BranchInst* BI = dyn_cast<BranchInst>(I)){
+	/*if(BranchInst* BI = dyn_cast<BranchInst>(I)){
 		if(!BI->isConditional())
 			return false;
 		if(isa<Constant>(BI->getCondition()))
 			return processFoldableCondBr(BI);
 		return false;
-	}
-	if(I->getType()->VoidTy()) return false;
-	uint32_t NextNum = Vn.getNextUnusedValueNumber();
-	unsigned NUm = VN.lookup_or_add(I);
+	}*/
+	if(I->getType()->isVoidTy()) return false;
+	uint32_t NextNum = VN.getNextUnusedValueNumber();
+	unsigned Num = VN.lookup_or_add(I);
 	if(isa<AllocaInst>(I) || isa<TerminatorInst>(I) || isa<PHINode>(I)){
 		return false;
 	}
 	if(Num >= NextNum){
 		return false;
 	}
-	return false;
+	Value * repl ;//= findLeader(I->getParent() , Num);
+	if(!repl){
+		//addToLeaderTable(Num,I,I->getParent());
+		return false;
+	}
+	patchAndReplaceAllUsesWith(I,repl);
+	if(MD && repl->getType()->getScalarType()->isPointerTy())
+		MD->invalidateCachedPointerInfo(repl);
+	markInstructionForDeletion(I);
+	return true;
 }
 bool MyCSE::processBlock(BasicBlock *BB){
 	bool changed = false;
-	for(BasicBlock::iterator BI = BB->begin() , BE = BB->end(); BI!=BE;){
-		changed |= processInstruction(BI);
+	for(BasicBlock::iterator II = BB->begin() , IE = BB->end(); II!=IE;){
+		changed |= processInstruction(II);
 		if(InstrsToErase.empty()){
-			BI++;
+			II++;
 			continue;
 		}
-		NumGVNInstr += InstrsToErase.size();
-		bool AtStart = BI ==BB->begin();
+		//NumGVNInstr += InstrsToErase.size();
+		bool AtStart = II ==BB->begin();
 		if(!AtStart)
-			--BI;
+			--II;
 		for(SmallVectorImpl<Instruction *>::iterator I = InstrsToErase.begin(),E= InstrsToErase.end();
 			I!=E ; ++I){
 			DEBUG(dbgs()<<"GVN removed: "<<**I<<'\n');
@@ -265,9 +346,9 @@ bool MyCSE::processBlock(BasicBlock *BB){
 		}
 		InstrsToErase.clear();
 		if(AtStart)
-			BI=BB->begin();
+			II=BB->begin();
 		else
-			++BI;
+			++II;
 	}
 	return changed;
 }
